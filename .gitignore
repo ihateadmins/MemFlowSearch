@@ -1,2 +1,3 @@
-[core]
-excludesFile = lib/libmemflow_ffi.a
+*.o
+*.out
+/lib/libmemflow_ffi.a

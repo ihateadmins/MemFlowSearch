@@ -81,11 +81,13 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
+
     Search search;
 	search.setprocess(&proc);
 	search.getpagemap();
 	std::string message = "search word";
 	search.searchmemory(message);
+	search.searchrepetition(message);
 
 	return 1;
 }

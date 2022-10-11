@@ -17,8 +17,9 @@ public:
     bool searchmemory(std::string message);
     bool searchrepetition(std::string message);
 
-    int checkarray(uint8_t* buf, int size,std::string bytes,uint64_t baseaddr);
-    
+    int checkarray(uint8_t* buf, int size, std::string bytes, uint64_t baseaddr);
+    int checkarrayrepetition(uint8_t* buf, int size, std::string bytes, uint64_t baseaddr,std::vector<uint64_t>& tempv);
+
     bool clear();
 
     Search();
@@ -64,31 +65,52 @@ bool Search::searchmemory(std::string message)
 
         delete buf.data;        
     }
-    
-
-
-
-
-    /*
-
-
-
-
-        CSliceMut<uint8_t> buf;
-        buf.data = new u_int8_t[info._1];
-        buf.len = info._1;
-        proc->read_raw_into(info._0,buf);
-        delete buf.data;
-        */
     return true;
 }
 
+
+int Search::checkarrayrepetition(uint8_t* buf, int size, std::string bytes, uint64_t baseaddr, std::vector<uint64_t>& tempv)
+{
+    for (uint64_t i = 0; i < size; i++)
+    {
+        if (buf[i] == bytes[0])
+        {
+            for (int j = 0; j < bytes.length(); j++)
+            {
+                if (buf[i + j] != bytes[j])
+                {
+                    break;
+                }
+                if (j == bytes.length() - 1)
+                {
+                    //this->memory_hit_vec.push_back(baseaddr + i);
+                    tempv.push_back(baseaddr);
+                    std::cout << "hits: " << "0x" << std::uppercase << std::hex << baseaddr + i << std::endl;
+                    std::cout << &buf[i] << std::endl;
+                }
+            }
+        }
+    }
+
+
+    return 0;
+}
+
+
+
 bool Search::searchrepetition(std::string message){
+    std::vector<uint64_t> tempv;
     for (auto &&i : this->memory_hit_vec)
     {
-        
+        CSliceMut<uint8_t> buf;
+        buf.data = new u_int8_t[message.length()];
+        buf.len = message.length();
+        this->process->read_raw_into(i, buf);
+        checkarrayrepetition(buf.data, message.length(), message, i,tempv);
+        delete buf.data;
     }
-    
+    this->memory_hit_vec = tempv;
+    return true;
 }
 
 bool Search::getpagemap(ProcessInstance<CBox<void>, CArc<void>>* proc)
