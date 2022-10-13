@@ -74,20 +74,122 @@ int main(int argc, char *argv[]) {
 
     ProcessInstance<CBox<void>, CArc<void>> proc;
 	std::string targetprocess = "Notepad.exe";
+	//
     os.process_by_name(targetprocess, &proc);
 	if (!proc.vtbl_process)
 	{
 		log_error(("unable to "+ targetprocess).c_str());
 		return 0;
 	}
-
-
     Search search;
 	search.setprocess(&proc);
 	search.getpagemap();
 	std::string message = "search word";
 	search.searchmemory(message);
-	search.searchrepetition(message);
+	//search.searchmemory((char)12);
+	//search.searchmemory((short)12);
+	//search.searchmemory((int)36);
+	//search.searchrepetition(message);
+	//search.searchrepetition((int)12);
+
+
+	while (true)
+	{
+		int c = 0;
+		int u = 0;
+		u_int8_t u8; 
+		u_int16_t u16; 
+		u_int32_t u32; 
+		u_int64_t u64; 
+		u_long addr = 0;
+		std::cout << "0:search.searchmemory" << std::endl;
+		std::cout << "1:search.searchrepetition" << std::endl;
+		std::cout << "2:search.writememory" << std::endl;
+		std::cout << "3:search.dumpmemory" << std::endl;
+		std::cout << "4:search.searchmemorystring" << std::endl;
+		std::cout << "5:search.writememory all hits" << std::endl;
+		std::cin >> c ;
+		switch (c)
+		{
+		case 0:
+			std::cin >> u ;
+			switch (u)
+			{
+			case 1:
+				std::cin >> u8 ;
+				search.searchmemory(u8);
+				break;
+			case 2:
+				std::cin >> u16 ;
+				search.searchmemory(u16);
+				break;
+			case 4:
+				std::cin >> u32 ;
+				search.searchmemory(u32);
+				break;
+			case 8:
+				std::cin >> u64 ;
+				search.searchmemory(u64);
+				break;
+			default:
+				break;
+			}			
+			break;
+		case 1:
+			switch (u)
+			{
+			case 1:
+				std::cin >> u8 ;
+				search.searchrepetition(u8);
+				break;
+			case 2:
+				std::cin >> u16 ;
+				search.searchrepetition(u16);
+				break;
+			case 4:
+				std::cin >> u32 ;
+				search.searchrepetition(u32);
+				break;
+			case 8:
+				std::cin >> u64 ;
+				search.searchrepetition(u64);
+				break;
+			default:
+				break;
+			}
+			break;
+		case 2:
+			std::cin >> std::hex >> addr;
+			std::cin >> std::dec >> u32 ;
+			search.writememory(addr,u32);
+			break;
+		case 3:
+			std::cin >> std::hex >> addr;
+			std::cin >> std::dec >> u32 ;
+			search.dumpmemory(addr,u32);
+			break;			
+		case 4:
+			std::cin >> message ;
+			search.searchmemory(message);
+			break;	
+		case 5:
+			std::cin >> std::dec >> u32 ;
+			for (auto &&i : search.memory_hit_vec)
+			{				
+				search.writememory(i,u32);
+			}			
+			break;		
+		default:
+			break;
+		}
+		search.printhits();
+	}
+	
+
+
+
+
+
 
 	return 1;
 }

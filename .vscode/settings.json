@@ -44,7 +44,8 @@
         "numbers": "cpp",
         "ostream": "cpp",
         "stdexcept": "cpp",
-        "streambuf": "cpp"
+        "streambuf": "cpp",
+        "fstream": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

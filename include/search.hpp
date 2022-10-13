@@ -1,6 +1,8 @@
+#ifndef SEARCH_H
+#define SEARCH_H
 #include <iostream>
 #include <vector>
-
+#include <fstream>
 
 class Search
 {
@@ -12,19 +14,101 @@ public:
     std::vector<uint64_t> memory_hit_vec;
 
     void setprocess(ProcessInstance<CBox<void>, CArc<void>>* process);
-    bool getpagemap(ProcessInstance<CBox<void>, CArc<void>>* proc);
+
     bool getpagemap();
-    bool searchmemory(std::string message);
+    bool getpagemap(ProcessInstance<CBox<void>, CArc<void>>* proc);
+
+    template<typename T> int writememory(uint64_t addr,T bytes);
+    bool dumpmemory(uint64_t addr,uint64_t size);
+
+    template<typename T> int checkarray(uint8_t* buf, int size,T bytes,uint64_t baseaddr);
+    int checkarray(uint8_t* buf, int size, std::string bytes, uint64_t baseaddr);
+
+    template<typename T> bool searchmemory(T message);
+
+    template<typename T> bool searchrepetition(T message);
     bool searchrepetition(std::string message);
 
-    int checkarray(uint8_t* buf, int size, std::string bytes, uint64_t baseaddr);
+    template<typename T> int checkarrayrepetition(uint8_t* buf, int size, T bytes, uint64_t baseaddr, std::vector<uint64_t>& tempv);
     int checkarrayrepetition(uint8_t* buf, int size, std::string bytes, uint64_t baseaddr,std::vector<uint64_t>& tempv);
 
+    bool printhits();
     bool clear();
 
     Search();
     ~Search();
 };
+
+bool Search::dumpmemory(uint64_t addr,uint64_t size){
+
+    CSliceMut<uint8_t> buf;
+    buf.data = new u_int8_t[size];
+    buf.len = size;
+    this->process->read_raw_into(addr,buf);
+
+    std::ofstream of;
+    of.open(std::to_string(addr),std::ios_base::trunc|std::ios_base::binary);
+    if (!of)
+    {
+        return 0;
+    }
+    of.write((const char* )buf.data,size);
+    of.close();
+    delete buf.data;  
+    return 1;
+}
+
+template<typename T> int Search::writememory(uint64_t addr,T bytes){
+    int length = sizeof(bytes);
+    unsigned char* uc_arg = (unsigned char*) &bytes;    
+    uint8_t* lbytes=new uint8_t[length];
+    //little endian
+    for (int i = 0; i < length; i++) {
+        lbytes[i]=uc_arg[i];
+    }
+
+    CSliceRef<uint8_t> buf;
+    buf.data = lbytes;
+    buf.len = length;
+
+    this->process->write_raw(addr,buf);
+    return 1;
+}
+
+template<typename T> int Search::checkarray(uint8_t* buf, int size,T bytes,uint64_t baseaddr)
+{
+    int length = sizeof(bytes);
+
+    unsigned char* uc_arg = (unsigned char*) &bytes;    
+    uint8_t* lbytes=new uint8_t[length];
+    //little endian
+    for (int i = 0; i < length; i++) {
+        lbytes[i]=uc_arg[i];
+    }
+
+	for (uint64_t i = 0; i < size; i++)
+	{
+		if (buf[i] == lbytes[0])
+		{
+			for (int j = 0; j < length; j++)
+			{
+				if (buf[i + j] != lbytes[j])
+				{
+					break;
+				}
+				if (j == length - 1)
+				{
+                    this->memory_hit_vec.push_back(baseaddr+i);
+                    std::cout << "hits: " << "0x" << std::uppercase << std::hex << baseaddr+i << std::endl;
+                    //std::cout << &buf[i] << std::endl;
+				}
+			}
+		}
+	}
+    delete lbytes;
+	return 0;
+}
+
 
 int Search::checkarray(uint8_t* buf, int size,std::string bytes,uint64_t baseaddr)
 {
@@ -47,27 +131,8 @@ int Search::checkarray(uint8_t* buf, int size,std::string bytes,uint64_t baseadd
 			}
 		}
 	}
-
-
 	return 0;
 }
-
-bool Search::searchmemory(std::string message)
-{
-    for (auto &&info : this->memory_range_vec)
-    {
-        CSliceMut<uint8_t> buf;
-        buf.data = new u_int8_t[info._1];
-        buf.len = info._1;
-        this->process->read_raw_into(info._0,buf);
-
-        this->checkarray(buf.data, info._1,message, info._0);
-
-        delete buf.data;        
-    }
-    return true;
-}
-
 
 int Search::checkarrayrepetition(uint8_t* buf, int size, std::string bytes, uint64_t baseaddr, std::vector<uint64_t>& tempv)
 {
@@ -96,7 +161,75 @@ int Search::checkarrayrepetition(uint8_t* buf, int size, std::string bytes, uint
     return 0;
 }
 
+template<typename T> int Search::checkarrayrepetition(uint8_t* buf, int size, T bytes, uint64_t baseaddr, std::vector<uint64_t>& tempv)
+{
+    int length = sizeof(bytes);
 
+    unsigned char* uc_arg = (unsigned char*) &bytes;    
+    uint8_t* lbytes=new uint8_t[length];
+    //little endian
+    for (int i = 0; i < length; i++) {
+        lbytes[i]=uc_arg[i];
+    }
+
+    for (uint64_t i = 0; i < size; i++)
+    {
+        if (buf[i] == lbytes[0])
+        {
+            for (int j = 0; j < length; j++)
+            {
+                if (buf[i + j] != lbytes[j])
+                {
+                    break;
+                }
+                if (j == length - 1)
+                {
+                    //this->memory_hit_vec.push_back(baseaddr + i);
+                    tempv.push_back(baseaddr);
+                    std::cout << "hits: " << "0x" << std::uppercase << std::hex << baseaddr + i << std::endl;
+                    //std::cout << &buf[i] << std::endl;
+                }
+            }
+        }
+    }
+
+
+    return 0;
+}
+
+template<typename T> bool Search::searchmemory(T message)
+{
+    this->memory_hit_vec.clear();
+    for (auto &&info : this->memory_range_vec)
+    {
+        CSliceMut<uint8_t> buf;
+        buf.data = new u_int8_t[info._1];
+        buf.len = info._1;
+        this->process->read_raw_into(info._0,buf);
+
+        this->checkarray(buf.data, info._1, message, info._0);
+
+        delete buf.data;        
+    }
+    return true;
+}
+
+template<typename T> bool Search::searchrepetition(T message)
+{
+    int length = sizeof(message);
+    std::vector<uint64_t> tempv;
+    for (auto &&i : this->memory_hit_vec)
+    {
+        CSliceMut<uint8_t> buf;
+        buf.data = new u_int8_t[length];
+        buf.len = length;
+        this->process->read_raw_into(i, buf);
+        checkarrayrepetition(buf.data, length, message, i,tempv);
+        delete buf.data;
+    }
+    this->memory_hit_vec = tempv;
+    return true;
+}
 
 bool Search::searchrepetition(std::string message){
     std::vector<uint64_t> tempv;
@@ -145,12 +278,18 @@ void Search::setprocess(ProcessInstance<CBox<void>, CArc<void>>* process)
 }
 
 
+bool Search::printhits()
+{   
+    std::cout << std::dec << this->memory_hit_vec.size() << std::hex << std::endl;
+    return true;
+}
 
 bool Search::clear()
 {
     this->process=nullptr;
     this->memory_range_vec.clear();
     this->memory_hit_vec.clear();
+    return true;
 }
 
 Search::Search()
@@ -161,3 +300,6 @@ Search::Search()
 Search::~Search()
 {
 }
+
+
+#endif // SEARCH_H

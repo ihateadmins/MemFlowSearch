@@ -8,7 +8,7 @@
             "name": "clang root",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/main.out",
+            "program": "${workspaceFolder}/main.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

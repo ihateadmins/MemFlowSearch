@@ -1,10 +1,10 @@
 CXX = clang++
-CFLAGS = -g -O0 -pedantic -std=c++20 -Iinclude/ -Llib/
-LIBS=-lm -ldl -lpthread -l:libmemflow_ffi.a
+CFLAGS = -g -O0 -pedantic -std=c++20
+LIBS=-lm -ldl -lpthread -Llib/ -l:libmemflow_ffi.a
 
 ODIR=./
 
-%.o: %.cpp $(DEPS)
+main.o: main.cpp $(DEPS)
 	$(CXX) -c -o $@ $< $(CFLAGS)
 
 main.out: main.o

@@ -3,7 +3,7 @@
         {
             "label": "make",
             "type": "shell",
-            "command": "make",
+            "command": "make -B",
             "args": [],
             "group": "build"
         }
