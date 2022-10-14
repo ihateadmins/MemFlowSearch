@@ -245,12 +245,10 @@ void Search::write_mem(uint64_t targetaddress, const char* data)
 {
 	std::cout << "datasize=" << strlen(data) << " data=" << data << std::endl;
 
-	for(int i=0; i < strlen(data); ++i){
-		CSliceRef<uint8_t> temp;
-		temp.data = (uint8_t*)&data[i];
-		temp.len = strlen(data);
-		this->process->write_raw(targetaddress+i, temp);
-	}
+	CSliceRef<uint8_t> temp;
+	temp.data = (uint8_t*)data;
+	temp.len = strlen(data);
+	this->process->write_raw(targetaddress, temp) == 0;
 
 }
 
