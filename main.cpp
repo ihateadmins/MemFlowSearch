@@ -5,10 +5,44 @@
 #include <stdio.h>
 #include <vector>
 
+OsInstance<> os;
+Search search;
+
 void fmt_arch(char *arch, int n, ArchitectureIdent ident);
+
+int open_targetprocess(std::string &targetprocess, ProcessInstance<CBox<void>, CArc<void>> &proc){
+
+	os.process_by_name(targetprocess, &proc);
+	if (!proc.vtbl_process)
+	{
+		log_error(("unable to "+ targetprocess).c_str());
+		return 0;
+	}
+
+	bool is_alive = proc.state().tag == ProcessState::Tag::ProcessState_Alive;
+	if (!is_alive)
+	{
+		std::string logerrorstr = std::string("unable to find ") + targetprocess;
+		log_error(logerrorstr.c_str());
+
+		return 1;
+	}
+
+	std::cout << "found " << targetprocess << " running, path -> " << proc.info()->path << std::endl;
+
+	search.setprocess(&proc);
+	search.getpagemap();
+}
+
+constexpr unsigned int str2int(std::string in, int h = 0)
+{
+	const char* str = in.c_str();
+	return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
+}
 
 int main(int argc, char *argv[]) {
 	log_init(LevelFilter::LevelFilter_Info);
+	//log_init(LevelFilter::LevelFilter_Error);
 
 	Inventory *inventory = inventory_scan();
 
@@ -36,7 +70,6 @@ int main(int argc, char *argv[]) {
 		printf("connector initialized: %p\n", connector.container.instance.instance);
 	}
 
-	OsInstance<> os;
 
 	if (inventory_create_os(inventory, os_name, os_arg, conn, &os)) {
 		printf("unable to initialize OS\n");
@@ -72,125 +105,148 @@ int main(int argc, char *argv[]) {
 		return true;
 	});
 
-    ProcessInstance<CBox<void>, CArc<void>> proc;
-	std::string targetprocess = "Notepad.exe";
-	//
-    os.process_by_name(targetprocess, &proc);
-	if (!proc.vtbl_process)
-	{
-		log_error(("unable to "+ targetprocess).c_str());
-		return 0;
-	}
-    Search search;
-	search.setprocess(&proc);
-	search.getpagemap();
-	std::string message = "search word";
-	search.searchmemory(message);
+	ProcessInstance<CBox<void>, CArc<void>> proc;
+	std::cout << "type target process name ex. main.exe" << std::endl;
+	std::string targetprocess("main.exe");
+	std::getline(std::cin >> std::ws, targetprocess);
+
+	open_targetprocess(targetprocess, proc);
+
+	std::string message = "There is nothing here";
+	std::string replacemessage = "There was something :O";
+	//search.searchmemory(message);
 	//search.searchmemory((char)12);
 	//search.searchmemory((short)12);
-	//search.searchmemory((int)36);
-	//search.searchrepetition(message);
-	//search.searchrepetition((int)12);
 
+	std::cout << "Test search for value:int=13371337" << std::endl;
+	search.searchmemory((int)13371337);
+	std::cout << "Test search for value:str='There is nothing here'" << std::endl;
+	search.searchmemory(message);
+    
 
-	while (true)
-	{
-		int c = 0;
-		int u = 0;
-		u_int8_t u8; 
-		u_int16_t u16; 
-		u_int32_t u32; 
-		u_int64_t u64; 
+	while (true){
+		std::string c("");
+		std::string c2("");
+		//int u = 0;
+		u_int8_t u8;
+		u_int16_t u16;
+		u_int32_t u32;
+		u_int64_t u64;
 		u_long addr = 0;
-		std::cout << "0:search.searchmemory" << std::endl;
-		std::cout << "1:search.searchrepetition" << std::endl;
-		std::cout << "2:search.writememory" << std::endl;
-		std::cout << "3:search.dumpmemory" << std::endl;
-		std::cout << "4:search.searchmemorystring" << std::endl;
-		std::cout << "5:search.writememory all hits" << std::endl;
-		std::cin >> c ;
-		switch (c)
+		std::cout << "{proc}: specify/change target process=>value:str" << std::endl;
+		std::cout << "{s}: searchmemory=>{1|2|4|8|str} \\n value" << std::endl;
+		std::cout << "{sr}: searchrepetition=>{1|2|4|8|str} \\n value" << std::endl;
+		std::cout << "{wm}: writememory int =>addr \\n value" << std::endl;
+		std::cout << "{wm str}: writememory str=>addr \\n value" << std::endl;
+		std::cout << "{wm all}: writememory all hits=>value" << std::endl;
+		std::cout << "{dump}: dumpmemory ???" << std::endl;
+		std::getline(std::cin >> std::ws, c);
+
+		switch (str2int(c))
 		{
-		case 0:
-			std::cin >> u ;
-			switch (u)
+		case str2int("proc"):
+			std::cout << "type target process name ex. main.exe" << std::endl;
+			std::getline(std::cin >> std::ws, targetprocess);
+			open_targetprocess(targetprocess, proc);
+			break;
+		case str2int("s"):
+			std::getline(std::cin >> std::ws, c2);
+			switch (str2int(c2))
 			{
-			case 1:
+			case str2int("1"):
+			case str2int("u8"):
 				std::cin >> u8 ;
 				search.searchmemory(u8);
 				break;
-			case 2:
+			case str2int("2"):
+			case str2int("u16"):
 				std::cin >> u16 ;
 				search.searchmemory(u16);
 				break;
-			case 4:
+			case str2int("4"):
+			case str2int("u32"):
 				std::cin >> u32 ;
 				search.searchmemory(u32);
 				break;
-			case 8:
+			case str2int("8"):
+			case str2int("u64"):
 				std::cin >> u64 ;
 				search.searchmemory(u64);
 				break;
-			default:
-				break;
-			}			
-			break;
-		case 1:
-			switch (u)
-			{
-			case 1:
-				std::cin >> u8 ;
-				search.searchrepetition(u8);
-				break;
-			case 2:
-				std::cin >> u16 ;
-				search.searchrepetition(u16);
-				break;
-			case 4:
-				std::cin >> u32 ;
-				search.searchrepetition(u32);
-				break;
-			case 8:
-				std::cin >> u64 ;
-				search.searchrepetition(u64);
+			case str2int("s"):
+			case str2int("str"):
+				std::cin >> message ;
+				search.searchmemory(message);
 				break;
 			default:
 				break;
 			}
 			break;
-		case 2:
+		case str2int("sr"):
+			std::cin >> c2 ;
+			switch (str2int(c2))
+			{
+			case str2int("1"):
+			case str2int("u8"):
+				std::cin >> u8 ;
+				search.searchrepetition(u8);
+				break;
+			case str2int("2"):
+			case str2int("u16"):
+				std::cin >> u16 ;
+				search.searchrepetition(u16);
+				break;
+			case str2int("4"):
+			case str2int("u32"):
+				std::cin >> u32 ;
+				search.searchrepetition(u32);
+				break;
+			case str2int("8"):
+			case str2int("u64"):
+				std::cin >> u64 ;
+				search.searchrepetition(u64);
+				break;
+			case str2int("s"):
+			case str2int("str"):
+				std::getline(std::cin >> std::ws, message);
+				search.searchrepetition(message);
+				break;
+			default:
+				break;
+			}
+			break;
+		case str2int("wm"):
+			std::cout << "type memory addr. ex 0x26FEA9460A0" << std::endl;
 			std::cin >> std::hex >> addr;
+			std::cout << "type value" << std::endl;
 			std::cin >> std::dec >> u32 ;
 			search.writememory(addr,u32);
 			break;
-		case 3:
+		case str2int("wm str"):
+			std::cout << "type memory addr. ex 0x26FEA9460A0" << std::endl;
 			std::cin >> std::hex >> addr;
+			std::cout << "type value" << std::endl;
+			std::getline(std::cin >> std::ws, replacemessage);
+			search.write_mem(addr, replacemessage.c_str());
+			break;
+		case str2int("wm all"):
+			std::cin >> std::dec >> u32 ;
+			for (auto &&i : search.memory_hit_vec){
+				search.writememory(i,u32);
+			}
+			break;
+		case str2int("dump"):
+			std::cout << "type memory addr. ex 0x26FEA9460A0" << std::endl;
+			std::cin >> std::hex >> addr;
+			std::cout << "type value" << std::endl;
 			std::cin >> std::dec >> u32 ;
 			search.dumpmemory(addr,u32);
-			break;			
-		case 4:
-			std::cin >> message ;
-			search.searchmemory(message);
-			break;	
-		case 5:
-			std::cin >> std::dec >> u32 ;
-			for (auto &&i : search.memory_hit_vec)
-			{				
-				search.writememory(i,u32);
-			}			
-			break;		
+			break;
 		default:
 			break;
 		}
 		search.printhits();
 	}
-	
-
-
-
-
-
-
 	return 1;
 }
 
