@@ -36,9 +36,9 @@ int open_targetprocess(std::string &targetprocess, ProcessInstance<CBox<void>, C
 	return 1;
 }
 
-constexpr unsigned int str2int(std::string incc, int h = 0)
+constexpr unsigned int str2int(std::string in, int h = 0)
 {
-	const char* str = incc.c_str();
+	const char* str = in.c_str();
 	return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 }
 
