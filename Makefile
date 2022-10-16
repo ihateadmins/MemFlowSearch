@@ -1,5 +1,5 @@
 CXX = clang++
-CFLAGS = -g -O0 -pedantic -std=c++20
+CFLAGS = -g -O0 -pedantic -std=c++20 -stdlib=libc++
 LIBS=-lm -ldl -lpthread -Llib/ -l:libmemflow_ffi.a
 
 ODIR=./

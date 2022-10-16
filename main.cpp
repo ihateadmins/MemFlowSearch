@@ -33,7 +33,7 @@ int open_targetprocess(std::string &targetprocess, ProcessInstance<CBox<void>, C
 	search.setprocess(&proc);
 	search.getpagemap();
 	
-	return 1;
+	return 2;
 }
 
 constexpr unsigned int str2int(std::string in, int h = 0)
